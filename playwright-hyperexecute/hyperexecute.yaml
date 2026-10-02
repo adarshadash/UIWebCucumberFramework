@@ -1,0 +1,74 @@
+---
+version: "0.1"
+globalTimeout: 90
+testSuiteTimeout: 90
+testSuiteStep: 90
+
+# ── Parallel cross-browser / cross-OS execution ─────────────────────────────
+# Matrix mode: every os x browser combination runs as its own task, in parallel.
+#   win   + chrome  -> Windows, Google Chrome (latest)
+#   win   + firefox -> Windows, Firefox
+#   linux + chrome  -> Linux,   Google Chrome (latest)
+#   linux + firefox -> Linux,   Firefox
+runson: ${matrix.os}
+matrix:
+  os: [win, linux]
+  browser: [chrome, firefox]
+concurrency: 4
+
+retryOnFailure: true
+maxRetries: 1
+
+# ── Injected environment variables ──────────────────────────────────────────
+# Read by tests/rangeSlider.spec.ts via process.env. Change them here (no code change)
+# to point the same test at another slider/value/URL.
+env:
+  CI: "true"
+  SLIDER_URL: https://www.testmuai.com/selenium-playground/drag-drop-range-sliders-demo/
+  SLIDER_LABEL: Default value 15
+  START_VALUE: "15"
+  TARGET_VALUE: "95"
+  # ── Secret Management ──
+  # Value is stored in HyperExecute Secrets (dashboard), never committed; masked in logs.
+  DEMO_API_TOKEN: ${{ .secrets.DEMO_API_TOKEN }}
+
+# ── Dependency caching ──────────────────────────────────────────────────────
+# node_modules is cached and reused until package-lock.json changes.
+cacheKey: '{{ checksum "package-lock.json" }}'
+cacheDirectories:
+  - node_modules
+
+# ── Pre steps (run on every VM before the tests) ────────────────────────────
+pre:
+  - npm install
+  - npx playwright install chromium firefox
+
+# ── Tests ───────────────────────────────────────────────────────────────────
+testSuites:
+  - npx playwright test --project=$browser
+
+# ── Post steps (optional, run after the tests) ──────────────────────────────
+post:
+  - npx playwright --version
+  - node -e "console.log('Test run finished on ' + process.platform)"
+
+# ── Artifacts Management ────────────────────────────────────────────────────
+# Uploaded from every VM; mergeArtifacts collates them into one downloadable
+# archive per artifact name on the job's Artifacts tab.
+mergeArtifacts: true
+uploadArtefacts:
+  - name: PlaywrightHtmlReport
+    path:
+      - playwright-report/**
+  - name: VideosScreenshotsTraces
+    path:
+      - test-results/**
+
+# Consolidated HyperExecute report built from each task's Playwright HTML report
+report: true
+partialReports:
+  type: html
+  location: playwright-report
+  frameworkName: playwright
+
+jobLabel: [playwright, range-slider, cross-browser]

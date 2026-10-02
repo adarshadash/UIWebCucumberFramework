@@ -1,0 +1,14 @@
+{
+  "name": "playwright-hyperexecute",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright range-slider test running in parallel on the HyperExecute grid",
+  "scripts": {
+    "test": "playwright test",
+    "test:chrome": "playwright test --project=chrome",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

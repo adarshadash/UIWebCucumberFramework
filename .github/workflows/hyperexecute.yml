@@ -1,0 +1,37 @@
+name: HyperExecute - Playwright
+
+on:
+  push:
+    branches: [main]
+    paths: ['playwright-hyperexecute/**', '.github/workflows/hyperexecute.yml']
+  pull_request:
+    paths: ['playwright-hyperexecute/**']
+  workflow_dispatch:
+
+jobs:
+  hyperexecute:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: playwright-hyperexecute
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download HyperExecute CLI
+        run: |
+          curl -fsSL -o hyperexecute https://downloads.lambdatest.com/hyperexecute/linux/hyperexecute
+          chmod +x hyperexecute
+
+      - name: Run tests on HyperExecute
+        env:
+          LT_USERNAME: ${{ secrets.LT_USERNAME }}
+          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
+        run: ./hyperexecute --user "$LT_USERNAME" --key "$LT_ACCESS_KEY" --config hyperexecute.yaml
+
+      - name: Upload CLI log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyperexecute-cli-log
+          path: playwright-hyperexecute/hyperexecute-cli.log
+          if-no-files-found: ignore
